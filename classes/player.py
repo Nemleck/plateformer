@@ -8,6 +8,7 @@ from .gameobject import GameObject
 # load images
 playerIdle = pyglet.image.load("sources/player/idle.png")
 playerOpen = pyglet.image.load("sources/player/open.png")
+playerRewind = pyglet.image.load("sources/player/rewind.png")
 
 class Player(GameObject):
     def __init__(self):
@@ -27,6 +28,8 @@ class Player(GameObject):
         
         # place the player
         self.pos: list[int] = [0, 200]
+        self.last_pos: list[list[int]] = [self.pos]
+        self.dt = 0
         
         self.sprite = pyglet.sprite.Sprite(self.state, x=self.pos[0], y=self.pos[1])
         self.sprite.scale_x = self.size[0]
@@ -103,26 +106,57 @@ class Player(GameObject):
         return check[0] and check[1]
      
     def move(self, dt, keys):
-        if not self.can_move:
-            return
+        if not self.animation and self.can_move:
+            # move the player
+            if keys[key.Q]:
+                self.pos[0] -= 300*dt * self.speed_mod
+            if keys[key.D]:
+                self.pos[0] += 300*dt * self.speed_mod
+            if keys[key.Z]:
+                if not self.tongueOn:
+                    self.state = self.openImg
+                    self.tongueOn = True
+                
+                else:
+                    self.tongueSize[1] += 600*dt
 
-        # move the player
-        if keys[key.Q]:
-            self.pos[0] -= 300*dt * self.speed_mod
-        if keys[key.D]:
-            self.pos[0] += 300*dt * self.speed_mod
-        if keys[key.Z]:
-            if not self.tongueOn:
-                self.state = self.openImg
-                self.tongueOn = True
+                    if self.tongueSize[1] > 400:
+                        self.tongueSize[1] = 400
             
-            else:
-                self.tongueSize[1] += 600*dt
+            else: # no z key
+                self.state = playerIdle
+                self.tongueSize[1] = 50
+                self.tongueOn = False
 
-                if self.tongueSize[1] > 400:
-                    self.tongueSize[1] = 400
+        self.rewind_update(dt, keys)
+
+    def rewind_update(self, dt, keys):
+        # store positions to rewind
+        print(self.animation)
+        self.dt += dt
+        if self.dt >= 0.2:
+            self.dt = 0
+
+            if keys[key.A] and len(self.last_pos) >= 1:
+                self.animation = "rewind"
+                self.state = playerRewind
+                self.tongueOn = False
+
+                del self.last_pos[0]
+            else:
+                if len(self.last_pos) <= 200:
+                    self.last_pos.insert(0, [round(elm) for elm in self.pos])
+                
+                if self.animation == "rewind":
+                    self.animation = None
+                    self.last_pos = []
         
-        else: # no z
-            self.state = playerIdle
-            self.tongueSize[1] = 50
-            self.tongueOn = False
+        elif self.animation == "rewind" and len(self.last_pos) >= 1:
+            print("anim update")
+            dt_to_one = 1/dt
+
+            x_diff = self.last_pos[0][0] - self.pos[0]
+            y_diff = self.last_pos[0][1] - self.pos[1]
+
+            self.pos[0] += x_diff/dt_to_one
+            self.pos[1] += y_diff/dt_to_one
