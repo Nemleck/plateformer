@@ -1,0 +1,58 @@
+[
+    {
+        "type": "grass",
+        "width": 1090,
+        "height": 1550,
+        "x": 0,
+        "y": -1550,
+        "special_ability": null
+    },
+    {
+        "type": "grass",
+        "width": 1090,
+        "height": 1550,
+        "x": 890,
+        "y": -1350,
+        "special_ability": null
+    },
+    {
+        "type": "grass",
+        "width": 1090,
+        "height": 1550,
+        "x": -890,
+        "y": -1350,
+        "special_ability": null
+    },
+    {
+        "type": "rock",
+        "width": 412,
+        "height": 92,
+        "x": 340,
+        "y": 125,
+        "special_ability": 50
+    },
+    {
+        "type": "hook",
+        "width": 39,
+        "height": 72,
+        "x": 900,
+        "y": 350,
+        "special_ability": null
+    },
+    {
+        "type": "hook",
+        "width": 39,
+        "height": 72,
+        "x": 400,
+        "y": 300,
+        "special_ability": null
+    },
+    {
+        "type": "hook",
+        "width": 39,
+        "height": 72,
+        "x": 105,
+        "y": 300,
+        "special_ability": null
+    }
+]
