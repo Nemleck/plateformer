@@ -18,13 +18,33 @@ hook2 = GameObject("hook", 39, 72, 400, 300)
 gameobjects.append(hook1)
 gameobjects.append(hook2)
 
+# labels init
+
+coords_label = pyglet.text.Label('[0,0]',
+    font_name='Impact',
+    font_size=15,
+    x=window.width//2, y=window.height-15,
+    anchor_x='center', anchor_y='top')
+
+coords_label.color = (0,0,0,255)
+
+rewind_labed = pyglet.text.Label('0',
+    font_name='Impact',
+    font_size=30,
+    x=15, y=window.height-15,
+    anchor_x='left', anchor_y='top')
+
+rewind_labed.color = (0,0,0,255)
+
 # Create plateform
 plateform1 = GameObject("grass", 1090, 1550, 0, -1550)
 plateform3 = GameObject("grass", 1090, 1550, 890, -1350)
-plateform2 = GameObject("rock", 412, 92, 340, 125, special_ability=500)
+plateform4 = GameObject("grass", 1090, 1550, -890, -1350)
+plateform2 = GameObject("rock", 412, 92, 340, 125, special_ability=50)
 gameobjects.append(plateform1)
 gameobjects.append(plateform2)
 gameobjects.append(plateform3)
+gameobjects.append(plateform4)
 
 # sort all gamobjects based on y
 result = []
@@ -89,6 +109,12 @@ def render_update(dt):
     # draw the player
     for player_sprite in player.update(scrolling):
         player_sprite.draw()
+    
+    # draw UI
+    coords_label.draw()
+
+    if player.animation == "rewind":
+        rewind_labed.draw()
 
 def game_update(dt):
     global foundGround
@@ -151,12 +177,12 @@ def game_update(dt):
             player.pos[1] -= 200*dt
     
     # out of the screen ?
-    if not player.animation:
+    if not player.animation or player.animation in ["rewind"]:
         x_mod = 0
         y_mod = 0
         if player.sprite.y <= 100:
             y_mod = -250
-        elif player.sprite.y >= win_height - 100:
+        elif player.sprite.y >= win_height - 350:
             y_mod = 250
         if player.sprite.x <= 300:
             x_mod = -250
@@ -167,6 +193,16 @@ def game_update(dt):
             scrolling[0] += x_mod*dt
         if y_mod:
             scrolling[1] += y_mod*dt
+
+        # too low ?
+        if player.pos[1] < -1000:
+            player.pos[1] = 0
+    
+    # label update
+    coords_label.text = str([round(elm) for elm in player.pos])
+
+    if player.animation == "rewind":
+        rewind_labed.text = str(len(player.last_pos))
 
 # Schedule the update and draw functions
 pyglet.clock.schedule_interval(game_update, 1/120)
