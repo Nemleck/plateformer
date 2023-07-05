@@ -59,7 +59,6 @@ class GameObject:
         right_x = x + obj.size[0]
 
         check_x = False
-        print(range(self_x1, self_x2+1), range(x,right_x+1))
         for i in range(self_x1, self_x2+1):
             if i in range(x,right_x+1):
                 check_x = True
@@ -70,7 +69,6 @@ class GameObject:
     def on_collision(self):
         if self.type == "rock":
             self.falling = True
-            print("rockcoll")
         
     def is_mid(self, win_width, win_height):
         if self.sprite:
