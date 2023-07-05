@@ -64,7 +64,7 @@ class GameObject:
                 check_x = True
                 break
 
-        return round(self.pos[1] - 1) in range(y-5,y) and check_x
+        return round(self.pos[1] - 2) in range(y-5,y) and check_x
     
     def on_collision(self):
         if self.type == "rock":
