@@ -19,6 +19,7 @@ window = pyglet.window.Window(win_width, win_height, "game")
 
 # Create a player
 player = Player(data["player"]["starting_pos"])
+player2 = Player([-50, 200], False, key.UP, key.LEFT, key.RIGHT, key.DOWN)
 
 # Create gameobject list
 gameobjects = []
@@ -94,7 +95,7 @@ def render_update(dt):
                 sprite.draw()
 
     # draw the player
-    for player_sprite in player.update(scrolling):
+    for player_sprite in player.update(scrolling)+player2.update(scrolling):
         player_sprite.draw()
     
     # draw UI
@@ -106,12 +107,15 @@ def render_update(dt):
 def game_update(dt):
     # update EVERYTHING about the player
     player.game_update(dt, gameobjects, scrolling, keys, win_width, win_height)
+    player2.game_update(dt, gameobjects, scrolling, keys, win_width, win_height)
     
     # label update
     coords_label.text = str([round(elm) for elm in player.pos])
 
     if player.animation == "rewind":
         rewind_labed.text = str(len(player.last_pos))
+    
+    print(scrolling)
 
 # Schedule the update and draw functions
 pyglet.clock.schedule_interval(game_update, 1/120)
