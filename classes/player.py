@@ -11,7 +11,7 @@ playerOpen = pyglet.image.load("sources/player/open.png")
 playerRewind = pyglet.image.load("sources/player/rewind.png")
 
 class Player(GameObject):
-    def __init__(self, pos=[0,200]):
+    def __init__(self, pos=[0,200], is_main_player=True, upKey=key.Z, leftKey=key.Q, rightKey=key.D, rewindKey=key.A):
         self.idleImg = playerIdle
         self.openImg = playerOpen
 
@@ -24,12 +24,18 @@ class Player(GameObject):
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
         self.size: list[int] = [5, 5]
-        self.state = playerOpen
+        self.state = playerIdle
         
         # place the player
         self.pos: list[int] = pos
         self.last_pos: list[list[int]] = [self.pos]
         self.dt = 0
+
+        # set keys
+        self.upKey = upKey
+        self.leftKey = leftKey
+        self.rightKey = rightKey
+        self.rewindKey = rewindKey
         
         self.sprite = pyglet.sprite.Sprite(self.state, x=self.pos[0], y=self.pos[1])
         self.sprite.scale_x = self.size[0]
@@ -39,6 +45,8 @@ class Player(GameObject):
         self.can_move = True
         self.speed_mod: int|float = 1
         self.animation: str|None = None
+
+        self.is_main_player = is_main_player
 
         self.update([0,0])
     
@@ -110,16 +118,18 @@ class Player(GameObject):
         self.rewind_update(dt, keys)
         self.hook_animation(dt, keys)
         self.collisions(dt, gameobjects, scrolling, win_width, win_height)
-        self.screen_collisions(dt, scrolling, win_width, win_height)
+
+        if self.is_main_player:
+            self.screen_collisions(dt, scrolling, win_width, win_height)
      
     def move(self, dt, keys):
         if not self.animation and self.can_move:
             # move the player
-            if keys[key.Q]:
+            if keys[self.leftKey]:
                 self.pos[0] -= 300*dt * self.speed_mod
-            if keys[key.D]:
+            if keys[self.rightKey]:
                 self.pos[0] += 300*dt * self.speed_mod
-            if keys[key.Z] and self.speed_mod >= 1:
+            if keys[self.upKey] and self.speed_mod >= 1:
                 if not self.tongueOn:
                     self.state = self.openImg
                     self.tongueOn = True
@@ -141,15 +151,16 @@ class Player(GameObject):
         if self.dt >= 0.2:
             self.dt = 0
 
-            if keys[key.A] and len(self.last_pos) >= 1:
+            if keys[self.rewindKey] and len(self.last_pos) >= 1:
                 self.animation = "rewind"
                 self.state = playerRewind
                 self.tongueOn = False
 
                 del self.last_pos[0]
             else:
-                if len(self.last_pos) <= 100:
-                    self.last_pos.insert(0, [round(elm) for elm in self.pos])
+                self.last_pos.insert(0, [round(elm) for elm in self.pos])
+                if len(self.last_pos) >= 100:
+                    del self.last_pos[-1]
                 
                 if self.animation == "rewind":
                     self.animation = None
@@ -165,7 +176,7 @@ class Player(GameObject):
             self.pos[1] += y_diff/dt_to_one
     
     def hook_animation(self, dt, keys):
-        if self.animation == "hook" and not keys[key.Z]:
+        if self.animation == "hook" and not keys[self.upKey]:
             if self.tongueOn:
                 # make the animation of tongue removing
                 self.tongueSize[1] -= 500*dt
@@ -181,7 +192,7 @@ class Player(GameObject):
                 # fix flying bugs
                 self.animation = None
     
-    def collisions(self, dt, gameobjects, scrolling, win_width, win_height):
+    def collisions(self, dt: int, gameobjects: list[GameObject|None], scrolling: list[int], win_width, win_height):
         foundGround = False
         for gameobject in gameobjects:
             if not gameobject or not gameobject.is_visible(win_width, win_height, scrolling):
@@ -191,8 +202,9 @@ class Player(GameObject):
                 # collision with hook ?
                 if self.checkCollide(gameobject, True) and self.tongueOn and not self.animation:
                     # redefine scrolling so that the object is in the center
-                    scrolling[0] = - win_width//2 + gameobject.mid_pos(0)
-                    scrolling[1] = ( - win_height//2 + gameobject.mid_pos(1) ) - win_height//10 # make it a bit higher
+                    if self.is_main_player:
+                        scrolling[0] = - win_width//2 + gameobject.mid_pos(0)
+                        scrolling[1] = ( - win_height//2 + gameobject.mid_pos(1) ) - win_height//10 # make it a bit higher
 
                     # forbide moving
                     self.can_move = False
@@ -200,13 +212,15 @@ class Player(GameObject):
                     # Enable animation bool
                     self.animation = "hook"
                 
-            elif gameobject.type in ["grass", "rock"]:
+            elif gameobject.type in ["grass", "rock", "moving_plateform"]:
                 # collision with plateform ?
-                if self.checkGroundCollide(gameobject):
+                coll_result = self.checkGroundCollide(gameobject)
+                if coll_result[0]:
                     foundGround = True
                     self.speed_mod = 1
 
-                    gameobject.on_collision()
+                    if coll_result[1]:
+                        gameobject.on_collision()
 
                     continue
         
@@ -218,6 +232,10 @@ class Player(GameObject):
             else:
                 self.speed_mod = 0.5
                 self.pos[1] -= 200*dt
+        
+        # too low ?
+        if self.pos[1] < -1000:
+            self.pos[1] = 200
     
     def screen_collisions(self, dt, scrolling, win_width, win_height):
         # out of the screen ?
@@ -237,7 +255,3 @@ class Player(GameObject):
                 scrolling[0] += x_mod*dt
             if y_mod:
                 scrolling[1] += y_mod*dt
-
-            # too low ?
-            if self.pos[1] < -1000:
-                self.pos[1] = 0
