@@ -4,11 +4,12 @@ from pyglet import gl
 images = {
     "hook": pyglet.image.load("./sources/gameobjects/hook.png"),
     "grass": pyglet.image.load("./sources/plateform/grass.png"),
-    "rock": pyglet.image.load("./sources/plateform/rock.png")
+    "rock": pyglet.image.load("./sources/plateform/rock.png"),
+    "moving_plateform": pyglet.image.load("./sources/plateform/moving_plateform.png")
 }
 
 class GameObject:
-    def __init__(self, objtype: str, width: int, height: int, x: int, y: int, special_ability: int|None = None):
+    def __init__(self, objtype: str, width: int, height: int, x: int, y: int, spec_args: dict|None = None):
         self.size = [0, 0]
         self.size[0] = width
         self.size[1] = height
@@ -31,7 +32,8 @@ class GameObject:
             self.sprite = None
 
         self.type = objtype
-        self.special_ability = special_ability
+        self.spec_args = spec_args
+
         self.falling = False
 
         # place the object
@@ -39,8 +41,27 @@ class GameObject:
 
     def update(self, dt):
         # falling ?
-        if self.falling:
-            self.pos[1] -= self.special_ability*dt
+        if self.falling and self.spec_args:
+            self.pos[1] -= self.spec_args["falling_speed"]*dt
+        
+        # moving ?
+        if self.spec_args and "move" in self.spec_args.keys() and self.spec_args["move"]:
+            goal = [self.spec_args["new_x"], self.spec_args["new_y"]]
+            start_point = [self.spec_args["old_x"], self.spec_args["old_y"]]
+
+            if self.spec_args["current_move"] == "backwards":
+                goal, start_point = start_point, goal
+            
+            diff_x = goal[0] - start_point[0]
+            diff_y = goal[1] - start_point[1]
+
+            self.pos[0] += diff_x/(1/(dt*self.spec_args["speed"])) 
+            self.pos[1] += diff_y/(1/(dt*self.spec_args["speed"]))
+
+            if self.pos[0] >= self.spec_args["new_x"] and self.pos[1] >= self.spec_args["new_y"]:
+                self.spec_args["current_move"] = "backwards"
+            if self.pos[0] <= self.spec_args["old_x"] and self.pos[1] <= self.spec_args["old_y"]:
+                self.spec_args["current_move"] = "forwards"
 
         if self.sprite:
             return self
@@ -63,11 +84,16 @@ class GameObject:
             if i in range(x,right_x+1):
                 check_x = True
                 break
+        
+        # Does the player completly touch the plateform ?
+        check_x_2 = False
+        if x <= self_x1 and self_x1 <= right_x and x <= self_x2 and self_x2 <= right_x:
+            check_x_2 = True
 
-        return round(self.pos[1] - 2) in range(y-5,y) and check_x
+        return (round(self.pos[1] - 2) in range(y-5,y) and check_x), check_x_2
     
     def on_collision(self):
-        if self.type == "rock":
+        if self.spec_args and "falling_speed" in self.spec_args.keys():
             self.falling = True
         
     def is_mid(self, win_width, win_height):
