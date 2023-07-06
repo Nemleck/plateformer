@@ -24,12 +24,23 @@
         "special_ability": null
     },
     {
+        "type": "grass",
+        "width": 680,
+        "height": 1550,
+        "x": 200,
+        "y": -1350,
+        "special_ability": {
+            "falling_speed": 100
+        }
+    },
+    {
         "type": "rock",
         "width": 412,
         "height": 92,
-        "x": 340,
-        "y": 125,
-        "special_ability": 50
+        "x": 1080,
+        "y": 108,
+        "special_ability": {
+        }
     },
     {
         "type": "hook",
@@ -43,9 +54,17 @@
         "type": "hook",
         "width": 39,
         "height": 72,
-        "x": 400,
-        "y": 300,
-        "special_ability": null
+        "x": 201,
+        "y": 350,
+        "special_ability": {
+            "move": true,
+            "speed": 0.3,
+            "old_x": 200,
+            "old_y": 350,
+            "new_x": 690,
+            "new_y": 350,
+            "current_move": "backwards"
+        }
     },
     {
         "type": "hook",
@@ -54,5 +73,21 @@
         "x": 105,
         "y": 300,
         "special_ability": null
+    },
+    {
+        "type": "moving_plateform",
+        "width": 200,
+        "height": 44,
+        "x": 400,
+        "y": 156,
+        "special_ability": {
+            "move": true,
+            "speed": 0.2,
+            "old_x": 200,
+            "old_y": 156,
+            "new_x": 690,
+            "new_y": 156,
+            "current_move": "backwards"
+        }
     }
 ]
