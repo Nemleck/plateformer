@@ -3,9 +3,18 @@
         "width": 800,
         "height": 600
     },
-    "player": {
-        "starting_pos": [0, 200]
-    },
+    "players": [
+        {},
+        {
+            "starting_pos": [0, 200],
+            "keys": {
+                "up": "UP",
+                "left": "LEFT",
+                "right": "RIGHT",
+                "rewind": "DOWN"
+            }
+        }
+    ],
     "music": {
         "location": "sources/musics/ground.mp3"
     }

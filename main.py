@@ -2,6 +2,7 @@ import pyglet
 from classes.player import *
 from classes.functions import *
 from classes.gameobject import *
+from classes.ennemy import *
 from classes.functions import *
 
 # import options
@@ -17,9 +18,29 @@ win_width = data["window"]["width"]
 win_height = data["window"]["height"]
 window = pyglet.window.Window(win_width, win_height, "game")
 
-# Create a player
-player = Player(data["player"]["starting_pos"])
-player2 = Player([-50, 200], False, key.UP, key.LEFT, key.RIGHT, key.DOWN)
+# Create all players
+players: list["Player"] = []
+
+for player_i in range(len(data["players"])):
+    player = data["players"][player_i]
+    move_keys = {"up": key.Z, "left": key.Q, "right": key.D, "rewind": key.A}
+
+    if "keys" in player.keys():
+        for p_key in ["up", "left", "right", "rewind"]:
+            if p_key in player["keys"].keys():
+                move_keys[p_key] = getattr(key, player["keys"][p_key])
+
+    starting_pos = [0, 200]
+    if "starting_pos" in player.keys():
+        starting_pos = player["starting_pos"]
+
+    players.append(Player(starting_pos, player_i, *move_keys.values()))
+
+showed_player = 0
+rounded_sh_play = 0
+
+# Create an Ennemy
+ennemy1 = Ennemy([0, 300], "blob")
 
 # Create gameobject list
 gameobjects = []
@@ -62,7 +83,6 @@ ground_music = pyglet.media.load(data["music"]["location"], streaming=False)
 bg_sprite, clouds_sprite = background_setup(win_width, win_height)
 
 # Var init
-scrolling = [0, 0]
 bg_x_scrolling = 0
 
 # Setup Keyboard
@@ -79,48 +99,59 @@ def render_update(dt):
     # draw the background
     bg_sprite.draw()
 
-    clouds_sprite.x = -500 - scrolling[0] + bg_x_scrolling
-    clouds_sprite.y = -500 - scrolling[1]
+    clouds_sprite.x = -500 - players[rounded_sh_play].scrolling[0] + bg_x_scrolling
+    clouds_sprite.y = -500 - players[rounded_sh_play].scrolling[1]
     clouds_sprite.draw()
     
     # draw every objects
     for gameobject in gameobjects:
-        if gameobject.is_visible(win_width, win_height, scrolling):
+        if gameobject.is_visible(win_width, win_height, players[rounded_sh_play].scrolling):
             sprite = gameobject.sprite
             gameobject.update(dt)
 
             if type(sprite) is pyglet.sprite.Sprite:
-                sprite.x = gameobject.pos[0] - scrolling[0]
-                sprite.y = gameobject.pos[1] - scrolling[1]
+                sprite.x = gameobject.pos[0] - players[rounded_sh_play].scrolling[0]
+                sprite.y = gameobject.pos[1] - players[rounded_sh_play].scrolling[1]
                 sprite.draw()
 
     # draw the player
-    for player_sprite in player.update(scrolling)+player2.update(scrolling):
+    player_sprites = []
+    for player in players:
+        player_sprites += player.update(players[rounded_sh_play].scrolling)
+
+    for player_sprite in player_sprites:
         player_sprite.draw()
     
     # draw UI
     coords_label.draw()
 
-    if player.animation == "rewind":
+    if players[rounded_sh_play].animation == "rewind":
         rewind_labed.draw()
 
 def game_update(dt):
+    global showed_player, rounded_sh_play
+
     # update EVERYTHING about the player
-    player.game_update(dt, gameobjects, scrolling, keys, win_width, win_height)
-    player2.game_update(dt, gameobjects, scrolling, keys, win_width, win_height)
+    for player in players:
+        player.game_update(dt, gameobjects, keys, win_width, win_height)
     
     # label update
-    coords_label.text = str([round(elm) for elm in player.pos])
+    coords_label.text = str([round(elm) for elm in players[rounded_sh_play].pos])
 
-    if player.animation == "rewind":
-        rewind_labed.text = str(len(player.last_pos))
+    if players[rounded_sh_play].animation == "rewind":
+        rewind_labed.text = str(len(players[rounded_sh_play].last_pos))
     
-    print(scrolling)
+    # change the current player scroll
+    if keys[key.M]:
+        showed_player += 1*dt
+        rounded_sh_play = round(showed_player)
+        if rounded_sh_play >= len(players):
+            showed_player = rounded_sh_play = 0
 
 # Schedule the update and draw functions
-pyglet.clock.schedule_interval(game_update, 1/120)
-pyglet.clock.schedule_interval(render_update, 1/120)
-pyglet.clock.schedule_interval(ground_music.play(), ground_music.duration)
+pyglet.clock.schedule_interval(game_update, 1/60)
+pyglet.clock.schedule_interval(render_update, 1/60)
+# pyglet.clock.schedule_interval(ground_music.play(), ground_music.duration)
 
 # Start the application
 pyglet.app.run()

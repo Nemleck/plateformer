@@ -5,15 +5,24 @@ from . import functions
 
 from .gameobject import GameObject
 
+import os
+
 # load images
-playerIdle = pyglet.image.load("sources/player/idle.png")
-playerOpen = pyglet.image.load("sources/player/open.png")
+playerIdle = pyglet.image.load("sources/player/idle1.png")
+playerOpen = pyglet.image.load("sources/player/open1.png")
 playerRewind = pyglet.image.load("sources/player/rewind.png")
 
 class Player(GameObject):
-    def __init__(self, pos=[0,200], is_main_player=True, upKey=key.Z, leftKey=key.Q, rightKey=key.D, rewindKey=key.A):
-        self.idleImg = playerIdle
-        self.openImg = playerOpen
+    def __init__(self, pos=[0,200], num=0, upKey=key.Z, leftKey=key.Q, rightKey=key.D, rewindKey=key.A):
+        idleExpression = f"sources/player/idle{num+1}.png"
+        openExpression = f"sources/player/open{num+1}.png"
+        if os.path.exists(idleExpression) and os.path.exists(openExpression):
+            self.idleImg = pyglet.image.load(idleExpression)
+            self.openImg = pyglet.image.load(openExpression)
+        else:
+            print("nope")
+            self.idleImg = playerIdle
+            self.openImg = playerOpen
 
         self.tongueOn: bool = False
         self.tongueImg = pyglet.image.load("sources/player/tongue.png")
@@ -24,7 +33,7 @@ class Player(GameObject):
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
         self.size: list[int] = [5, 5]
-        self.state = playerIdle
+        self.state = self.idleImg
         
         # place the player
         self.pos: list[int] = pos
@@ -38,25 +47,40 @@ class Player(GameObject):
         self.rewindKey = rewindKey
         
         self.sprite = pyglet.sprite.Sprite(self.state, x=self.pos[0], y=self.pos[1])
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
         self.sprite.scale_x = self.size[0]
         self.sprite.scale_y = self.size[1]
+
+        self.label = pyglet.text.Label(f"p{num+1}",
+            font_name='Impact',
+            font_size=20,
+            color=(0,0,0,255),
+            x=0, y=0,
+            anchor_x='center', anchor_y='center')
+        
 
         # some move and animation property
         self.can_move = True
         self.speed_mod: int|float = 1
         self.animation: str|None = None
 
-        self.is_main_player = is_main_player
+        self.scrolling = [elm for elm in self.pos]
+
+        self.num = num
 
         self.update([0,0])
     
-    def update(self, scrolling):
+    def update(self, main_scrolling):
         self.sprite.image = self.state
-        self.sprite.x = self.pos[0] - scrolling[0]
-        self.sprite.y = self.pos[1] - scrolling[1]
+        self.sprite.x = self.pos[0] - main_scrolling[0]
+        self.sprite.y = self.pos[1] - main_scrolling[1]
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+        
+        # update label
+        self.label.x = self.sprite.x + self.size[0]*16//2
+        self.label.y = self.sprite.y + self.size[1]*16*1.5
 
-        returnList = [self.sprite]
+        returnList = [self.sprite, self.label]
 
         if self.tongueOn:
             # calculate tongue coords
@@ -113,14 +137,12 @@ class Player(GameObject):
 
         return check[0] and check[1]
 
-    def game_update(self, dt, gameobjects, scrolling, keys, win_width, win_height):
+    def game_update(self, dt, gameobjects, keys, win_width, win_height):
         self.move(dt, keys)
         self.rewind_update(dt, keys)
         self.hook_animation(dt, keys)
-        self.collisions(dt, gameobjects, scrolling, win_width, win_height)
-
-        if self.is_main_player:
-            self.screen_collisions(dt, scrolling, win_width, win_height)
+        self.collisions(dt, gameobjects, win_width, win_height)
+        self.screen_collisions(dt, win_width, win_height)
      
     def move(self, dt, keys):
         if not self.animation and self.can_move:
@@ -141,7 +163,7 @@ class Player(GameObject):
                         self.tongueSize[1] = 400
             
             else: # no z key
-                self.state = playerIdle
+                self.state = self.idleImg
                 self.tongueSize[1] = 50
                 self.tongueOn = False
 
@@ -192,19 +214,19 @@ class Player(GameObject):
                 # fix flying bugs
                 self.animation = None
     
-    def collisions(self, dt: int, gameobjects: list[GameObject|None], scrolling: list[int], win_width, win_height):
+    def collisions(self, dt: int, gameobjects: list[GameObject|None], win_width, win_height):
         foundGround = False
         for gameobject in gameobjects:
-            if not gameobject or not gameobject.is_visible(win_width, win_height, scrolling):
+            if not gameobject or not gameobject.is_visible(win_width, win_height, self.scrolling):
                 continue
 
             if gameobject.type == "hook":
                 # collision with hook ?
                 if self.checkCollide(gameobject, True) and self.tongueOn and not self.animation:
                     # redefine scrolling so that the object is in the center
-                    if self.is_main_player:
-                        scrolling[0] = - win_width//2 + gameobject.mid_pos(0)
-                        scrolling[1] = ( - win_height//2 + gameobject.mid_pos(1) ) - win_height//10 # make it a bit higher
+                    if self.num == 0:
+                        self.scrolling[0] = - win_width//2 + gameobject.mid_pos(0)
+                        self.scrolling[1] = ( - win_height//2 + gameobject.mid_pos(1) ) - win_height//10 # make it a bit higher
 
                     # forbide moving
                     self.can_move = False
@@ -237,21 +259,31 @@ class Player(GameObject):
         if self.pos[1] < -1000:
             self.pos[1] = 200
     
-    def screen_collisions(self, dt, scrolling, win_width, win_height):
+    def screen_collisions(self, dt, win_width, win_height):
         # out of the screen ?
         if not self.animation or self.animation in ["rewind"]:
+            x_pos = self.pos[0]
+            y_pos = self.pos[1]
+
+# p2 = [200, 0]            
+# pour que p2 == [0, 0]
+# scrolling = [200, 0]
+# screen x limits = + -> 300 + 200; - -> <= 300 + 200
+# 
+# 
+
             x_mod = 0
             y_mod = 0
-            if self.sprite.y <= 100:
+            if y_pos <= 100 + self.scrolling[1]:
                 y_mod = -250
-            elif self.sprite.y >= win_height - 350:
+            elif y_pos >= win_height - 350 + self.scrolling[1]:
                 y_mod = 250
-            if self.sprite.x <= 300:
+            if x_pos <= 300 + self.scrolling[0]:
                 x_mod = -250
-            elif self.sprite.x >= win_width - 300:
+            elif x_pos >= win_width - 300 + self.scrolling[0]:
                 x_mod = 250
             
             if x_mod:
-                scrolling[0] += x_mod*dt
+                self.scrolling[0] += x_mod*dt
             if y_mod:
-                scrolling[1] += y_mod*dt
+                self.scrolling[1] += y_mod*dt
