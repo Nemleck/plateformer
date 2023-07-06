@@ -1,7 +1,6 @@
 # Start the game
-A little plateformer done in pyglet because I wanted to. That's all.
 
-All you have to do is launch the `start.bat` file.
+To start the game, all you have to do is launch the `start.bat` file.
 There might be some issues anymay :
 
 - You have to install pyglet with `pip install pyglet` in a cmd.
@@ -13,7 +12,7 @@ There might be some issues anymay :
 ## Basic controls
 
 There's currently two players, one moving with Q and D and the other with the arrows.
-I will soon make it possible to change the keys in the json.
+You can change the keys in the json, and add players by adding elements in the `players` property.
 
 To take out the tongue, press Z (player 1) \
 or the up arrow (player 2)
@@ -36,13 +35,19 @@ While you are doing that, you can see the number of positions that remain.
 
 ![The UI of rewind](sources/readme_images/UI_rewind.png)
 
+## Change view
+
+You can change the player's view that is rendered by pressing and holding M.
+
+![View comparing image](sources/readme_images/view.png)
+
 # Game Presentation
 
 You control a living plant that can pick up or interact with things with its tongue.
 
 ## Hooks
 
-You can interact you these "hooks" by touching them with the tongue
+You can interact with these "hooks" by touching them with the tongue
 
 ![Player using a hook](sources/readme_images/hook.png)
 
@@ -66,7 +71,7 @@ The player will however not move with these, meaning that you have to go forward
 
 # UI
 
-You can see your current coordinates at the top of the screen
+You can see your current coordinates at the top of the screen (That shows the coordinates of the player currently focused)
 
 ![Coordinates UI](sources/readme_images/coords.png)
 
@@ -74,14 +79,15 @@ You can see your current coordinates at the top of the screen
 
 ## Bugs
 
-- There might be some collision bugs with the player 2. I don't really know if I actually fixed it so don't be surprised. Please note that you can use your rewind ability if that happens.
+- There might be some collision bugs with the players. I don't really know if I actually fixed it so don't be surprised. Please note that you can use your rewind ability if that happens.
 
-- Currently, I play a music from youtube when you're playing the game. For some reason unknown yet, once the song is finished, the game crashes. If you prefer do not have a music but do not crash, but remove the line `123` from `main.py`
+- Before, I played a music from youtube when you were playing the game. For some reason unknown yet, once the song is finished, the game crashes. If you prefer having a music but crashing, add in the line `123` from `main.py` :
+`pyglet.clock.schedule_interval(ground_music.play(), ground_music.duration)`
 
-(it should be `pyglet.clock.schedule_interval(ground_music.play(), ground_music.duration)`)
+*Please note that it may run instable if done*
 
 ## Camera
 
-The camera follows only the player 1. The player 2 can go out of the screen, but the objects and plateforms **entirely out** won't work, due to performance reasons.
+The camera follows only one player. The others can go out of the screen, but the objects and plateforms **entirely out** won't work, due to performance reasons.
 
 ![Player2 out of the screen.](sources/readme_images/out_screen.png)
